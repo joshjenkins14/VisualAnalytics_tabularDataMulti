@@ -1,0 +1,110 @@
+<br> 
+<center><img src="http://i.imgur.com/sSaOozN.png" width="500"></center>
+
+## Course: Visual Analytics for Policy and Management
+
+### Joshua Jenkins
+
+_____
+<a id='part1'></a>
+
+# Multivariate Exercies
+
+
+```{r}
+library(openxlsx)
+link="https://github.com/EvansDataScience/data/raw/master/safeCitiesIndexAll.xlsx"
+
+safe=read.xlsx(link)
+```
+
+### Differential 
+
+```{r eval=TRUE, results='hide', warning=TRUE,message=TRUE}
+positionsIN=grep("H_In_", colnames(safe) )
+head(safe[,c(1,positionsIN)])
+```
+
+```{r eval=TRUE, results='hide', warning=FALSE,message=TRUE}
+library(ggplot2)
+library(GGally)
+```
+
+
+```{r eval=TRUE, results='hide', warning=TRUE,message=TRUE}
+library(reshape)
+safeA=melt(safe,
+           id.vars = 'city') # the unit of analysis
+head(safeA)
+```
+
+```{r}
+library(RColorBrewer)
+```
+
+
+```{r}
+base= ggplot(data = safeA, aes(x = reorder(variable, 
+                                           value, median, order=TRUE),
+                               y =reorder(city,
+                                          value, median, order=TRUE)))
+heat1=base + geom_tile(aes(fill = value)) + 
+    scale_fill_distiller(palette = "RdBu",direction = 1) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1,size = 4),
+              axis.text.y = element_text(size = 4))
+
+heat2=heat1+labs(y='City',x='Measure of Safety', title = 'Is Your City Safe?', caption = 'The Economist')
+heat2
+```
+
+### Inferential 
+
+```{r}
+library(openxlsx)
+```
+
+
+```{r}
+link2="https://github.com/EvansDataScience/data/raw/master/safeCitiesIndex.xlsx"
+
+safe2=read.xlsx(link2)
+```
+
+
+```{r}
+model1=lm(PERSONAL~HEALTH+INFRASTRUCTURE,data=safe2[,-1])
+```
+
+```{r}
+library(dotwhisker)
+library(broom)
+library(dplyr)
+```
+
+```{r eval=TRUE, results='hide', warning=TRUE,message=TRUE}
+model1_t = tidy(model1) %>%   
+    mutate(model = "Model 1") 
+model1_t
+```
+
+```{r eval=TRUE, results='hide', warning=TRUE,message=TRUE}
+model2=lm(PERSONAL~.,data=safe2[,-1]) # ~. means: all the remaining variables
+summary(model2)
+```
+
+
+```{r}
+model2_t <- tidy(model2) %>% mutate(model = "Model 2")
+allModels=rbind(model1_t, model2_t)
+```
+
+```{r}
+dwplot(allModels) + 
+    geom_vline(xintercept = 0, 
+               colour = "deeppink", 
+               linetype = 2) +
+    scale_colour_grey(start = .1, end = .7)+
+  labs(title = 'The connection between, DHIP and Public Safety', caption = 'The Economist', y='Dimensions', x = 'Coefficients')
+```
+
+
